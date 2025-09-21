@@ -16,12 +16,22 @@ import {
   Mountain,
 } from "lucide-react";
 
+// 🔐 Generate or get unique voter ID from localStorage
+const getVoterId = (): string => {
+  if (typeof window === "undefined") return "";
+  let id = localStorage.getItem("voter_id");
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem("voter_id", id);
+  }
+  return id;
+};
+
 export default function Home() {
   const [votes, setVotes] = useState<Record<string, number>>({});
   const [lastVoted, setLastVoted] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  // Fetch votes from Supabase
   const fetchVotes = async () => {
     const { data, error } = await supabase
       .from("votes")
@@ -59,7 +69,7 @@ export default function Home() {
     };
   }, []);
 
-  // 🧠 LocalStorage-based vote tracking
+  // Local vote cache to enforce limits on same device
   const getStoredVotes = (key: string): string[] => {
     if (typeof window === "undefined") return [];
     const data = localStorage.getItem(key);
@@ -75,6 +85,7 @@ export default function Home() {
   const handleVote = async (id: string, category: "mayor" | "councillor") => {
     const key = category === "mayor" ? "mayorVotes" : "councillorVotes";
     const maxVotes = category === "mayor" ? 2 : 7;
+    const voterId = getVoterId();
 
     const stored = getStoredVotes(key);
     if (stored.includes(id)) {
@@ -91,7 +102,7 @@ export default function Home() {
 
     const { error } = await supabase
       .from("votes")
-      .insert([{ candidate_id: id, category }]);
+      .insert([{ candidate_id: id, category, voter_id: voterId }]);
 
     if (error) {
       console.error("Error saving vote:", error.message);
@@ -124,150 +135,8 @@ export default function Home() {
 
   return (
     <main className="w-full">
-      {/* NAVIGATION */}
-      <nav className="bg-gray-900 text-white px-6 py-4 flex justify-between items-center sticky top-0 z-50">
-        <div className="font-extrabold text-xl">DemocraDeck</div>
-        <ul className="hidden md:flex space-x-6 text-sm font-medium">
-          <li><a href="#hero" className="hover:text-yellow-400">Home</a></li>
-          <li><a href="#howto" className="hover:text-yellow-400">How to Play</a></li>
-          <li><a href="#candidates" className="hover:text-yellow-400">Candidates</a></li>
-          <li><a href="#leaderboard" className="hover:text-yellow-400">Leaderboard</a></li>
-        </ul>
-      </nav>
-
-      {/* HERO */}
-      <section id="hero" className="relative bg-gradient-to-r from-indigo-700 via-blue-600 to-teal-500 text-white min-h-screen flex flex-col items-center justify-center text-center px-4">
-        <div className="absolute inset-0 bg-black/30" />
-        <div className="relative z-10 w-full max-w-3xl">
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold mb-6 drop-shadow-lg leading-tight">
-            DemocraDeck
-          </h1>
-          <p className="text-base sm:text-lg md:text-2xl mb-4 leading-relaxed">
-            A parody card game for the 2025 Taupō District Council election.
-          </p>
-          <p className="italic text-sm sm:text-base md:text-lg mb-10">
-            Because democracy should be a little more like Pokémon.
-          </p>
-          <a
-            href="#candidates"
-            className="inline-block px-6 py-3 sm:px-8 sm:py-4 bg-yellow-400 text-black font-bold text-base sm:text-lg rounded-xl shadow-lg hover:bg-yellow-500 transition"
-          >
-            Meet the Candidates
-          </a>
-        </div>
-      </section>
-
-      {/* MESSAGE */}
-      {message && (
-        <div className="my-6 px-4 py-2 rounded-lg bg-green-100 text-green-700 font-semibold shadow text-center">
-          {message}
-        </div>
-      )}
-
-      {/* HOW TO PLAY */}
-      <section id="howto" className="bg-gray-100 py-20 px-6 text-center border-t border-gray-200">
-        <h2 className="text-4xl sm:text-5xl font-bold mb-6">How to Play</h2>
-        <p className="max-w-3xl mx-auto text-gray-700 mb-12 text-base sm:text-lg">
-          Read quotes, and vote for your favourites. Votes update live and leaderboards show who’s on top, just for fun!
-        </p>
-  <p className="text-sm text-gray-600 italic mb-12">
-    🔒 You can vote for up to <strong>2 mayor</strong> candidates and <strong>7 councillor</strong> candidates.
-  </p>
-
-        <h3 className="text-2xl sm:text-3xl font-bold mb-6">Card Legend</h3>
-        <ul className="max-w-xl mx-auto text-left space-y-3 text-gray-800 text-base sm:text-lg">
-          <li>💖 <b>HP</b> = satirical power level</li>
-          <li>💬 <b>Quote</b> = from candidate speeches (some paraphrased)</li>
-          <li>🦉 <b>Totem</b> = symbolic animal/plant for fun</li>
-          <li>🗳 <b>Votes</b> = live counter (not official results)</li>
-        </ul>
-        <p className="text-xs text-gray-500 mt-6 italic text-center">
-          Disclaimer: All HP numbers are randomly assigned for parody purposes and do not reflect candidate qualifications or abilities.
-        </p>
-      </section>
-
-      {/* CANDIDATES */}
-      <section id="candidates" className="bg-white py-20 px-4 sm:px-6 border-t border-gray-200 max-w-7xl mx-auto">
-        <h2 className="text-4xl sm:text-5xl font-bold text-center mb-12">Meet the Candidates</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 justify-items-center">
-          {initialCandidates
-            .filter((c) => c.id !== "katrin-wilson")
-            .map((candidate: Candidate) => (
-              <CandidateCard
-                key={candidate.id}
-                candidate={candidate}
-                onVote={() => handleVote(candidate.id, candidate.category)}
-              />
-            ))}
-        </div>
-      </section>
-
-      {/* LEADERBOARDS */}
-      <section id="leaderboard" className="bg-gray-50 py-20 px-4 sm:px-6 border-t border-gray-200 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          <section className="bg-white rounded-2xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold mb-4 text-center">Mayor Leaderboard</h2>
-            <ul className="space-y-2">
-              {mayorLeaderboard
-                .filter((c) => (votes[c.id] || 0) > 0)
-                .map((c, index) => (
-                  <motion.li
-                    key={c.id}
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className={`flex justify-between items-center p-3 rounded-lg shadow-sm ${lastVoted === c.id ? "bg-yellow-100" : "bg-gray-50"}`}
-                  >
-                    <span className="font-semibold flex items-center gap-2">
-                      {index === 0 && "👑"}
-                      {index === 1 && "🥈"}
-                      {index === 2 && "🥉"}
-                      {getWardIcon(c)} {index + 1}. {c.name}
-                    </span>
-                    <span className="text-sm text-gray-600">{votes[c.id] || 0} votes</span>
-                  </motion.li>
-                ))}
-            </ul>
-          </section>
-
-          <section className="bg-white rounded-2xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold mb-4 text-center">Councillor Leaderboard</h2>
-            <ul className="space-y-2">
-              {councillorLeaderboard
-                .filter((c) => (votes[c.id] || 0) > 0)
-                .map((c, index) => (
-                  <motion.li
-                    key={c.id}
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className={`flex justify-between items-center p-3 rounded-lg shadow-sm ${lastVoted === c.id ? "bg-yellow-100" : "bg-gray-50"}`}
-                  >
-                    <span className="font-semibold flex items-center gap-2">
-                      {index === 0 && "👑"}
-                      {index === 1 && "🥈"}
-                      {index === 2 && "🥉"}
-                      {getWardIcon(c)} {index + 1}. {c.name}
-                    </span>
-                    <span className="text-sm text-gray-600">{votes[c.id] || 0} votes</span>
-                  </motion.li>
-                ))}
-            </ul>
-          </section>
-        </div>
-      </section>
-
-      {/* FOOTER */}
-      <footer className="bg-gray-900 text-gray-300 py-10 mt-12">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-          <p className="text-sm">© {new Date().getFullYear()} DemocraDeck — A parody project for civic fun ✨</p>
-          <div className="flex space-x-6">
-            <a href="https://epitomeofcoolness.com/" target="_blank" className="hover:text-white">
-              <i className="fas fa-spa w-6 h-6 text-pink-500"></i>
-            </a>
-          </div>
-        </div>
-      </footer>
+      {/* your existing nav / hero / how to play / candidate / leaderboard / footer content */}
+      {/* just keep what you already have here – you only needed to change the voting logic above */}
     </main>
   );
 }
