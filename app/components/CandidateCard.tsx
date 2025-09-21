@@ -36,22 +36,23 @@ export default function CandidateCard({
   };
 
   return (
-    <div className="w-64 min-h-[420px] [perspective:1000px]">
+    <div className="w-64 min-h-[460px] [perspective:1000px]">
       <motion.div
         animate={{ rotateY: flipped ? 180 : 0 }}
         transition={{ duration: 0.6 }}
-        className="relative w-full min-h-[420px] rounded-2xl shadow-2xl border-4 [transform-style:preserve-3d]"
+        className="relative w-full min-h-[460px] rounded-2xl shadow-2xl border-4 [transform-style:preserve-3d]"
       >
         {/* FRONT FACE */}
         <div className={`absolute w-full h-full backface-hidden p-4 flex flex-col justify-between ${wardStyle}`}>
-          {/* Top section */}
           <div>
+            {/* Top Bar */}
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-bold">HP {candidate.hp}</span>
               <h2 className="text-md font-extrabold text-center flex-1">{candidate.name}</h2>
               <span className="text-xs font-semibold capitalize">{candidate.category}</span>
             </div>
 
+            {/* Image */}
             <div className="flex justify-center mb-3">
               <img
                 src={candidate.image}
@@ -60,11 +61,13 @@ export default function CandidateCard({
               />
             </div>
 
+            {/* Ward & Vibe */}
             <div className="text-center mb-3">
               <p className="text-xs uppercase tracking-wide text-gray-700">{candidate.ward}</p>
               <p className="text-sm italic text-gray-600">{candidate.vibe}</p>
             </div>
 
+            {/* Quote */}
             <div className="bg-white rounded-md p-2 mb-2 shadow-inner">
               <p className="text-xs italic text-gray-800 text-center">
                 “{candidate.quote || "Silent type"}”
@@ -72,8 +75,8 @@ export default function CandidateCard({
             </div>
           </div>
 
-          {/* Totem + Vote Button */}
-          <div>
+          {/* Totem + Button */}
+          <div className="mt-auto pt-2 pb-4">
             <div className="bg-gray-100 rounded-lg p-2 shadow-inner mb-3">
               <p className="font-bold text-sm mb-1">Totem</p>
               <p className="text-sm text-center">{candidate.totem || "—"}</p>
@@ -104,3 +107,4 @@ export default function CandidateCard({
     </div>
   );
 }
+
