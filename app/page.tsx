@@ -60,32 +60,33 @@ export default function Home() {
   }, []);
 
   // 🧠 LocalStorage-based vote tracking
-  const getStoredCouncillorVotes = (): string[] => {
+  const getStoredVotes = (key: string): string[] => {
     if (typeof window === "undefined") return [];
-    const data = localStorage.getItem("councillorVotes");
+    const data = localStorage.getItem(key);
     return data ? JSON.parse(data) : [];
   };
 
-  const storeCouncillorVote = (id: string) => {
-    const existing = getStoredCouncillorVotes();
+  const storeVote = (key: string, id: string) => {
+    const existing = getStoredVotes(key);
     const updated = [...existing, id];
-    localStorage.setItem("councillorVotes", JSON.stringify(updated));
+    localStorage.setItem(key, JSON.stringify(updated));
   };
 
   const handleVote = async (id: string, category: "mayor" | "councillor") => {
-    if (category === "councillor") {
-      const stored = getStoredCouncillorVotes();
-      if (stored.includes(id)) {
-        setMessage("⚠️ You already voted for this candidate.");
-        setTimeout(() => setMessage(null), 2000);
-        return;
-      }
+    const key = category === "mayor" ? "mayorVotes" : "councillorVotes";
+    const maxVotes = category === "mayor" ? 2 : 7;
 
-      if (stored.length >= 7) {
-        setMessage("❌ You’ve already voted for 7 councillors.");
-        setTimeout(() => setMessage(null), 2000);
-        return;
-      }
+    const stored = getStoredVotes(key);
+    if (stored.includes(id)) {
+      setMessage(`⚠️ You already voted for this ${category}.`);
+      setTimeout(() => setMessage(null), 2000);
+      return;
+    }
+
+    if (stored.length >= maxVotes) {
+      setMessage(`❌ You’ve already used your ${maxVotes} ${category} votes.`);
+      setTimeout(() => setMessage(null), 2000);
+      return;
     }
 
     const { error } = await supabase
@@ -98,8 +99,7 @@ export default function Home() {
       return;
     }
 
-    if (category === "councillor") storeCouncillorVote(id);
-
+    storeVote(key, id);
     setLastVoted(id);
     setMessage("✅ Vote saved!");
     setTimeout(() => setMessage(null), 2000);
@@ -201,7 +201,6 @@ export default function Home() {
       {/* LEADERBOARDS */}
       <section id="leaderboard" className="bg-gray-50 py-20 px-4 sm:px-6 border-t border-gray-200 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          {/* Mayor Leaderboard */}
           <section className="bg-white rounded-2xl shadow-lg p-6">
             <h2 className="text-2xl font-bold mb-4 text-center">Mayor Leaderboard</h2>
             <ul className="space-y-2">
@@ -227,7 +226,6 @@ export default function Home() {
             </ul>
           </section>
 
-          {/* Councillor Leaderboard */}
           <section className="bg-white rounded-2xl shadow-lg p-6">
             <h2 className="text-2xl font-bold mb-4 text-center">Councillor Leaderboard</h2>
             <ul className="space-y-2">
