@@ -170,6 +170,10 @@ export default function Home() {
         <p className="max-w-3xl mx-auto text-gray-700 mb-12 text-base sm:text-lg">
           Read quotes, and vote for your favourites. Votes update live and leaderboards show who’s on top, just for fun!
         </p>
+  <p className="text-sm text-gray-600 italic mb-12">
+    🔒 You can vote for up to <strong>2 mayor</strong> candidates and <strong>7 councillor</strong> candidates.
+  </p>
+
         <h3 className="text-2xl sm:text-3xl font-bold mb-6">Card Legend</h3>
         <ul className="max-w-xl mx-auto text-left space-y-3 text-gray-800 text-base sm:text-lg">
           <li>💖 <b>HP</b> = satirical power level</li>
