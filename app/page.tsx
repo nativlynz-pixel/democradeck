@@ -21,26 +21,26 @@ export default function Home() {
   const [lastVoted, setLastVoted] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  // ✅ FIXED: Fetch + count votes per candidate
+  // ✅ FIXED: Fetch votes and count manually
+  const fetchVotes = async () => {
+    const { data, error } = await supabase
+      .from("votes")
+      .select("candidate_id");
+
+    if (error) {
+      console.error("Error fetching votes:", error.message);
+      return;
+    }
+
+    const voteMap: Record<string, number> = {};
+    data?.forEach((row: any) => {
+      voteMap[row.candidate_id] = (voteMap[row.candidate_id] || 0) + 1;
+    });
+
+    setVotes(voteMap);
+  };
+
   useEffect(() => {
-    const fetchVotes = async () => {
-      const { data, error } = await supabase
-        .from("votes")
-        .select("candidate_id, count:count(*)")
-        .group("candidate_id");
-
-      if (error) {
-        console.error("Error fetching votes:", error.message);
-        return;
-      }
-
-      const voteMap: Record<string, number> = {};
-      data?.forEach((row: any) => {
-        voteMap[row.candidate_id] = row.count;
-      });
-      setVotes(voteMap);
-    };
-
     fetchVotes();
 
     const channel = supabase
@@ -48,12 +48,8 @@ export default function Home() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "votes" },
-        (payload) => {
-          const candidateId = (payload.new as any).candidate_id;
-          setVotes((prev) => ({
-            ...prev,
-            [candidateId]: (prev[candidateId] || 0) + 1,
-          }));
+        () => {
+          fetchVotes(); // refresh after every insert
         }
       )
       .subscribe();
@@ -63,7 +59,6 @@ export default function Home() {
     };
   }, []);
 
-  // Handle vote
   const handleVote = async (id: string, category: "mayor" | "councillor") => {
     const { error } = await supabase
       .from("votes")
@@ -74,12 +69,12 @@ export default function Home() {
       setMessage("❌ Error saving vote");
       return;
     }
+
     setLastVoted(id);
     setMessage("✅ Vote saved!");
     setTimeout(() => setMessage(null), 2000);
   };
 
-  // Leaderboards
   const mayorLeaderboard = initialCandidates
     .filter((c) => c.category === "mayor")
     .sort((a, b) => (votes[b.id] || 0) - (votes[a.id] || 0));
