@@ -21,7 +21,7 @@ export default function Home() {
   const [lastVoted, setLastVoted] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  // ✅ FIXED: Fetch votes and count manually
+  // Fetch votes from Supabase
   const fetchVotes = async () => {
     const { data, error } = await supabase
       .from("votes")
@@ -49,7 +49,7 @@ export default function Home() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "votes" },
         () => {
-          fetchVotes(); // refresh after every insert
+          fetchVotes();
         }
       )
       .subscribe();
@@ -59,16 +59,46 @@ export default function Home() {
     };
   }, []);
 
+  // 🧠 LocalStorage-based vote tracking
+  const getStoredCouncillorVotes = (): string[] => {
+    if (typeof window === "undefined") return [];
+    const data = localStorage.getItem("councillorVotes");
+    return data ? JSON.parse(data) : [];
+  };
+
+  const storeCouncillorVote = (id: string) => {
+    const existing = getStoredCouncillorVotes();
+    const updated = [...existing, id];
+    localStorage.setItem("councillorVotes", JSON.stringify(updated));
+  };
+
   const handleVote = async (id: string, category: "mayor" | "councillor") => {
+    if (category === "councillor") {
+      const stored = getStoredCouncillorVotes();
+      if (stored.includes(id)) {
+        setMessage("⚠️ You already voted for this candidate.");
+        setTimeout(() => setMessage(null), 2000);
+        return;
+      }
+
+      if (stored.length >= 7) {
+        setMessage("❌ You’ve already voted for 7 councillors.");
+        setTimeout(() => setMessage(null), 2000);
+        return;
+      }
+    }
+
     const { error } = await supabase
       .from("votes")
       .insert([{ candidate_id: id, category }]);
 
     if (error) {
-      console.error("Error saving vote:", error.message, error.details);
+      console.error("Error saving vote:", error.message);
       setMessage("❌ Error saving vote");
       return;
     }
+
+    if (category === "councillor") storeCouncillorVote(id);
 
     setLastVoted(id);
     setMessage("✅ Vote saved!");
@@ -87,10 +117,7 @@ export default function Home() {
     if (candidate.category === "mayor") return <Crown className="w-4 h-4 text-white" />;
     if (candidate.ward.toLowerCase().includes("māori")) return <Feather className="w-4 h-4 text-white" />;
     if (candidate.ward.toLowerCase().includes("taup")) return <Droplet className="w-4 h-4 text-white" />;
-    if (
-      candidate.ward.toLowerCase().includes("turangi") ||
-      candidate.ward.toLowerCase().includes("tongariro")
-    ) return <TreePine className="w-4 h-4 text-white" />;
+    if (candidate.ward.toLowerCase().includes("turangi") || candidate.ward.toLowerCase().includes("tongariro")) return <TreePine className="w-4 h-4 text-white" />;
     if (candidate.ward.toLowerCase().includes("mangakino")) return <Mountain className="w-4 h-4 text-white" />;
     return null;
   };
@@ -155,7 +182,7 @@ export default function Home() {
         </p>
       </section>
 
-      {/* CANDIDATES + LEADERBOARD */}
+      {/* CANDIDATES */}
       <section id="candidates" className="bg-white py-20 px-4 sm:px-6 border-t border-gray-200 max-w-7xl mx-auto">
         <h2 className="text-4xl sm:text-5xl font-bold text-center mb-12">Meet the Candidates</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 justify-items-center">
