@@ -122,14 +122,17 @@ export default function Home() {
     .filter((c) => c.category === "mayor")
     .sort((a, b) => (votes[b.id] || 0) - (votes[a.id] || 0));
 
-  // Group councillors by ward
-  const councillorByWard = (wardName: string) =>
+  // ✅ Flexible ward filter (handles macrons + multiple keywords)
+  const councillorByWard = (wardMatches: string[]) =>
     initialCandidates
-      .filter(
-        (c) =>
-          c.category === "councillor" &&
-          c.ward.toLowerCase().includes(wardName.toLowerCase())
-      )
+      .filter((c) => {
+        if (c.category !== "councillor") return false;
+        const ward = c.ward
+          .toLowerCase()
+          .normalize("NFD") // normalize accents/macrons
+          .replace(/\p{Diacritic}/gu, ""); // strip diacritics
+        return wardMatches.some((match) => ward.includes(match));
+      })
       .sort((a, b) => (votes[b.id] || 0) - (votes[a.id] || 0));
 
   const getWardIcon = (candidate: Candidate) => {
@@ -255,17 +258,17 @@ export default function Home() {
             <h2 className="text-2xl font-bold mb-4 text-center">Councillor Vote-o-Meter</h2>
 
             {[
-              { ward: "taupō", label: "🌆 Taupō Ward (7 seats)" },
-              { ward: "rural", label: "🌿 Rural Ward (1 seat)" },
-              { ward: "māori", label: "✨ Māori Ward (2 seats)" },
-              { ward: "turangi", label: "🌊 Tūrangi–Tongariro Ward (1 seat)" },
-              { ward: "mangakino", label: "🌄 Mangakino–Pouakani Ward (1 seat)" },
+              { ward: ["taupo"], label: "🌆 Taupō Ward (7 seats)" },
+              { ward: ["rural"], label: "🌿 Rural Ward (1 seat)" },
+              { ward: ["maori", "papamarearea"], label: "✨ Māori Ward (Te Papamārearea, 2 seats)" },
+              { ward: ["turangi", "tongariro"], label: "🌊 Tūrangi–Tongariro Ward (1 seat)" },
+              { ward: ["mangakino"], label: "🌄 Mangakino–Pouakani Ward (1 seat)" },
             ].map(({ ward, label }) => {
               const wardList = councillorByWard(ward);
               if (wardList.length === 0) return null;
 
               return (
-                <div key={ward}>
+                <div key={label}>
                   <h3 className="text-lg font-semibold mb-2">{label}</h3>
                   <ul className="space-y-2">
                     {wardList
