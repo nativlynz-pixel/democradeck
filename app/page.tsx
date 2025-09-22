@@ -122,9 +122,15 @@ export default function Home() {
     .filter((c) => c.category === "mayor")
     .sort((a, b) => (votes[b.id] || 0) - (votes[a.id] || 0));
 
-  const councillorLeaderboard = initialCandidates
-    .filter((c) => c.category === "councillor" && c.id !== "katrin-wilson")
-    .sort((a, b) => (votes[b.id] || 0) - (votes[a.id] || 0));
+  // Group councillors by ward
+  const councillorByWard = (wardName: string) =>
+    initialCandidates
+      .filter(
+        (c) =>
+          c.category === "councillor" &&
+          c.ward.toLowerCase().includes(wardName.toLowerCase())
+      )
+      .sort((a, b) => (votes[b.id] || 0) - (votes[a.id] || 0));
 
   const getWardIcon = (candidate: Candidate) => {
     if (candidate.category === "mayor") return <Crown className="w-4 h-4 text-white" />;
@@ -244,31 +250,56 @@ export default function Home() {
             </ul>
           </section>
 
-          {/* Councillor Leaderboard */}
-          <section className="bg-white rounded-2xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold mb-4 text-center">Councillor Leaderboard</h2>
-            <ul className="space-y-2">
-              {councillorLeaderboard
-                .filter((c) => (votes[c.id] || 0) > 0)
-                .map((c, index) => (
-                  <motion.li
-                    key={c.id}
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className={`flex justify-between items-center p-3 rounded-lg shadow-sm ${lastVoted === c.id ? "bg-yellow-100" : "bg-gray-50"}`}
-                  >
-                    <span className="font-semibold flex items-center gap-2">
-                      {index === 0 && "👑"}
-                      {index === 1 && "🥈"}
-                      {index === 2 && "🥉"}
-                      {getWardIcon(c)} {index + 1}. {c.name}
-                    </span>
-                    <span className="text-sm text-gray-600">{votes[c.id] || 0} votes</span>
-                  </motion.li>
-                ))}
-            </ul>
+          {/* Councillor Leaderboard by Ward */}
+          <section className="bg-white rounded-2xl shadow-lg p-6 space-y-8">
+            <h2 className="text-2xl font-bold mb-4 text-center">Councillor Vote-o-Meter</h2>
+
+            {[
+              { ward: "taupō", label: "🌆 Taupō Ward (7 seats)" },
+              { ward: "rural", label: "🌿 Rural Ward (1 seat)" },
+              { ward: "māori", label: "✨ Māori Ward (2 seats)" },
+              { ward: "turangi", label: "🌊 Tūrangi–Tongariro Ward (1 seat)" },
+              { ward: "mangakino", label: "🌄 Mangakino–Pouakani Ward (1 seat)" },
+            ].map(({ ward, label }) => {
+              const wardList = councillorByWard(ward);
+              if (wardList.length === 0) return null;
+
+              return (
+                <div key={ward}>
+                  <h3 className="text-lg font-semibold mb-2">{label}</h3>
+                  <ul className="space-y-2">
+                    {wardList
+                      .filter((c) => (votes[c.id] || 0) > 0)
+                      .map((c, index) => (
+                        <motion.li
+                          key={c.id}
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className={`flex justify-between items-center p-3 rounded-lg shadow-sm ${lastVoted === c.id ? "bg-yellow-100" : "bg-gray-50"}`}
+                        >
+                          <span className="font-semibold flex items-center gap-2">
+                            {index === 0 && "👑"}
+                            {index === 1 && "🥈"}
+                            {index === 2 && "🥉"}
+                            {getWardIcon(c)} {index + 1}. {c.name}
+                          </span>
+                          <span className="text-sm text-gray-600">{votes[c.id] || 0} votes</span>
+                        </motion.li>
+                      ))}
+                  </ul>
+                </div>
+              );
+            })}
           </section>
+        </div>
+
+        {/* DISCLAIMER */}
+        <div className="mt-8 p-4 text-sm text-center bg-yellow-100 text-yellow-800 rounded-lg shadow-sm max-w-4xl mx-auto">
+          📢 <strong>Note:</strong> DemocraDeck is an <em>engagement tool</em> only.  
+          This isn’t a poll or official voting system. The Vote-o-Meter will stay  
+          live until <strong>11 October 2025</strong>, then be taken offline.  
+          Real votes happen at official polling places.
         </div>
       </section>
 
