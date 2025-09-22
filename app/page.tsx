@@ -129,8 +129,8 @@ export default function Home() {
         if (c.category !== "councillor") return false;
         const ward = c.ward
           .toLowerCase()
-          .normalize("NFD") // normalize accents/macrons
-          .replace(/\p{Diacritic}/gu, ""); // strip diacritics
+          .normalize("NFD")
+          .replace(/\p{Diacritic}/gu, ""); // strip macrons
         return wardMatches.some((match) => ward.includes(match));
       })
       .sort((a, b) => (votes[b.id] || 0) - (votes[a.id] || 0));
@@ -226,49 +226,44 @@ export default function Home() {
 
       {/* LEADERBOARDS */}
       <section id="leaderboard" className="bg-gray-50 py-20 px-4 sm:px-6 border-t border-gray-200 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          {/* Mayor Leaderboard */}
-          <section className="bg-white rounded-2xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold mb-4 text-center">Mayor Leaderboard</h2>
-            <ul className="space-y-2">
-              {mayorLeaderboard
-                .filter((c) => (votes[c.id] || 0) > 0)
-                .map((c, index) => (
-                  <motion.li
-                    key={c.id}
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className={`flex justify-between items-center p-3 rounded-lg shadow-sm ${lastVoted === c.id ? "bg-yellow-100" : "bg-gray-50"}`}
-                  >
-                    <span className="font-semibold flex items-center gap-2">
-                      {index === 0 && "👑"}
-                      {index === 1 && "🥈"}
-                      {index === 2 && "🥉"}
-                      {getWardIcon(c)} {index + 1}. {c.name}
-                    </span>
-                    <span className="text-sm text-gray-600">{votes[c.id] || 0} votes</span>
-                  </motion.li>
-                ))}
-            </ul>
-          </section>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          {/* Left side: Mayor + Taupō + Rural */}
+          <div className="space-y-8">
+            {/* Mayor Leaderboard */}
+            <section className="bg-white rounded-2xl shadow-lg p-6">
+              <h2 className="text-2xl font-bold mb-4 text-center">Mayor Leaderboard</h2>
+              <ul className="space-y-2">
+                {mayorLeaderboard
+                  .filter((c) => (votes[c.id] || 0) > 0)
+                  .map((c, index) => (
+                    <motion.li
+                      key={c.id}
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className={`flex justify-between items-center p-3 rounded-lg shadow-sm ${lastVoted === c.id ? "bg-yellow-100" : "bg-gray-50"}`}
+                    >
+                      <span className="font-semibold flex items-center gap-2">
+                        {index === 0 && "👑"}
+                        {index === 1 && "🥈"}
+                        {index === 2 && "🥉"}
+                        {getWardIcon(c)} {index + 1}. {c.name}
+                      </span>
+                      <span className="text-sm text-gray-600">{votes[c.id] || 0} votes</span>
+                    </motion.li>
+                  ))}
+              </ul>
+            </section>
 
-          {/* Councillor Leaderboard by Ward */}
-          <section className="bg-white rounded-2xl shadow-lg p-6 space-y-8">
-            <h2 className="text-2xl font-bold mb-4 text-center">Councillor Vote-o-Meter</h2>
-
+            {/* Taupō + Rural */}
             {[
               { ward: ["taupo"], label: "🌆 Taupō Ward (7 seats)" },
               { ward: ["rural"], label: "🌿 Rural Ward (1 seat)" },
-              { ward: ["maori", "papamarearea"], label: "✨ Māori Ward (Te Papamārearea, 2 seats)" },
-              { ward: ["turangi", "tongariro"], label: "🌊 Tūrangi–Tongariro Ward (1 seat)" },
-              { ward: ["mangakino"], label: "🌄 Mangakino–Pouakani Ward (1 seat)" },
             ].map(({ ward, label }) => {
               const wardList = councillorByWard(ward);
               if (wardList.length === 0) return null;
-
               return (
-                <div key={label}>
+                <div key={label} className="bg-white rounded-2xl shadow-lg p-6">
                   <h3 className="text-lg font-semibold mb-2">{label}</h3>
                   <ul className="space-y-2">
                     {wardList
@@ -294,7 +289,45 @@ export default function Home() {
                 </div>
               );
             })}
-          </section>
+          </div>
+
+          {/* Right side: Māori + Tūrangi–Tongariro + Mangakino */}
+          <div className="space-y-8">
+            {[
+              { ward: ["maori", "papamarearea"], label: "✨ Māori Ward (Te Papamārearea, 2 seats)" },
+              { ward: ["turangi", "tongariro"], label: "🌊 Tūrangi–Tongariro Ward (1 seat)" },
+              { ward: ["mangakino"], label: "🌄 Mangakino–Pouakani Ward (1 seat)" },
+            ].map(({ ward, label }) => {
+              const wardList = councillorByWard(ward);
+              if (wardList.length === 0) return null;
+              return (
+                <div key={label} className="bg-white rounded-2xl shadow-lg p-6">
+                  <h3 className="text-lg font-semibold mb-2">{label}</h3>
+                  <ul className="space-y-2">
+                    {wardList
+                      .filter((c) => (votes[c.id] || 0) > 0)
+                      .map((c, index) => (
+                        <motion.li
+                          key={c.id}
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className={`flex justify-between items-center p-3 rounded-lg shadow-sm ${lastVoted === c.id ? "bg-yellow-100" : "bg-gray-50"}`}
+                        >
+                          <span className="font-semibold flex items-center gap-2">
+                            {index === 0 && "👑"}
+                            {index === 1 && "🥈"}
+                            {index === 2 && "🥉"}
+                            {getWardIcon(c)} {index + 1}. {c.name}
+                          </span>
+                          <span className="text-sm text-gray-600">{votes[c.id] || 0} votes</span>
+                        </motion.li>
+                      ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* DISCLAIMER */}
